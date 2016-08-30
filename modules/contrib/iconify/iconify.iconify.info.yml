@@ -1,0 +1,33 @@
+# Base iconify_info plugin definitions.
+# Plugin property $defaults are defined in IconifyInfoManager.
+label:
+  text: label
+  icon: fa-tag
+status:
+  text: status
+  icon: fa-adjust
+id:
+  text: id
+  icon: fa-qrcode
+operations:
+  text: operations
+  icon: fa-cog
+published:
+  regex: ^publish
+  icon: fa-circle
+  weight: -1
+unpublished:
+  regex: ^unpublish
+  icon: fa-circle-o
+view:
+  regex: ^view
+  icon: fa-eye
+edit:
+  regex: ^edit
+  icon: fa-edit
+delete:
+  regex: ^delete
+  icon: fa-trash
+devel:
+  regex: ^devel
+  icon: fa-code
