@@ -1,0 +1,20 @@
+modifier: "16"
+hotkey: "32"
+position: "overlay"
+plugins:
+  menu:
+    enabled: 1
+    settings:
+      menus:
+        - admin
+        - devel
+  node:
+    enabled: 0
+  node_add:
+    enabled: 1
+  node_type:
+    enabled: 1
+  user:
+    enabled: 0
+    settings:
+      roles: []

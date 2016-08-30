@@ -1,0 +1,242 @@
+<?php
+
+/**
+ * @file
+ * Functions to support theming in Fett.
+ */
+
+use Drupal\Component\Utility\Html;
+
+include_once('includes/fett.offcanvas.php');
+include_once('includes/fett.mobile_menu.php');
+
+/**
+ * Implements hook_theme().
+ */
+function fett_theme() {
+  $module_path = drupal_get_path('theme', 'fett');
+  return [
+  ] + fett_offcanvas_theme($module_path);
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function fett_theme_registry_alter(&$theme_registry) {
+  // Add another page preprocess function that will get called after all child
+  // theme preprocess functions.
+  $theme_registry['page']['preprocess functions'][] = 'fett_preprocess_page_last';
+}
+
+/**
+ * Implements hook_library_info_alter().
+ */
+function fett_library_info_alter(&$libraries, $extension) {
+  $active_theme = \Drupal::theme()->getActiveTheme();
+  $theme = $active_theme->getName();
+  if ($extension == 'fett' && $theme !== 'fett') {
+    // Use subtheme vender javascript if it exists.
+    $theme_path = $active_theme->getPath();
+    foreach ($libraries as &$library) {
+      if (!empty($library['bower'])) {
+        if (!empty($library['js'])) {
+          foreach ($library['js'] as $file => $data) {
+            $new_path = $theme_path . '/' . $file;
+            if (file_exists($new_path)) {
+              $library['js']['/' . $new_path] = $data;
+              unset($library['js'][$file]);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Alter attachments (typically assets) to a page before it is rendered.
+ *
+ * Use this hook when you want to remove or alter attachments on the page, or
+ * add attachments to the page that depend on another module's attachments (this
+ * hook runs after hook_page_attachments().
+ *
+ * @param array &$page
+ *   An empty renderable array representing the page.
+ *
+ * @see hook_page_attachments_alter()
+ */
+function fett_page_attachments_alter(array &$page) {
+  $active_theme = \Drupal::theme()->getActiveTheme();
+  $theme = $active_theme->getName();
+  $theme_path = $active_theme->getPath();
+  $config = \Drupal::config($theme . '.settings')->get('settings');
+
+  // Process extension settings.
+  if (isset($config['enable_extensions']) && $config['enable_extensions'] === 1) {
+
+    // Attach poly-fills to support IE8.
+    if (isset($config['enable_legacy_browsers']) && $config['enable_legacy_browsers'] === 1) {
+      if (isset($config['legacy_browser_polyfills']) && $config['legacy_browser_polyfills'] === 1) {
+        $page['#attached']['library'][] = 'fett/fett.html5shiv';
+        $page['#attached']['library'][] = 'fett/fett.respond';
+        $page['#attached']['library'][] = 'fett/fett.selectivizr';
+      }
+    }
+
+  }
+
+  // Optimize mobile viewport.
+  $page['#attached']['html_head'][] = array(array(
+    '#type' => 'html_tag',
+    '#tag' => 'meta',
+    '#attributes' => array(
+        'name' => 'viewport',
+        'content' => 'width=device-width',
+      ),
+  ), 'mobile_viewport');
+
+  // Force IE to use Chrome Frame if installed.
+  $page['#attached']['html_head'][] = array(array(
+    '#type' => 'html_tag',
+    '#tag' => 'meta',
+    '#attributes' => array(
+      'content' => 'ie=edge, chrome=1',
+      'http-equiv' => 'x-ua-compatible',
+    ),
+  ), 'chrome_frame');
+
+  // Remove image toolbar in IE.
+  $page['#attached']['html_head'][] = array(array(
+    '#type' => 'html_tag',
+    '#tag' => 'meta',
+    '#attributes' => array(
+      'http-equiv' => 'ImageToolbar',
+      'content' => 'false',
+    ),
+  ), 'ie_image_toolbar');
+}
+
+/**
+ * Implements hook_form_alter().
+ * @param $form
+ * @param $form_state
+ * @param $form_id
+ */
+function fett_form_alter(&$form, &$form_state, $form_id) {
+  // Sexy submit buttons
+  if (!empty($form['actions']) && !empty($form['actions']['submit'])) {
+    $form['actions']['submit']['#attributes']['class'][] = 'primary';
+    $form['actions']['submit']['#attributes']['class'][] = 'button';
+    $form['actions']['submit']['#attributes']['class'][] = 'radius';
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function fett_preprocess_page(&$vars) {
+  $theme = \Drupal::theme()->getActiveTheme()->getName();
+  $config = \Drupal::config($theme . '.settings')->get('settings');
+
+  $vars['prefix'] = isset($vars['prefix']) ? $vars['prefix'] : [];
+  $vars['suffix'] = isset($vars['suffix']) ? $vars['suffix'] : [];
+  $vars['attributes'] = isset($vars['attributes']) ? $vars['attributes'] : [];
+
+  // Mobile menu ops
+  fett_mobile_menu_preprocess_page($vars, $config);
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function fett_preprocess_node(&$vars) {
+  $vars['element'] = 'article';
+  $vars['title_element'] = 'h2';
+  $vars['link_title'] = TRUE;
+  $vars['content_element'] = '';
+  $vars['content_attributes'] = [];
+}
+
+/**
+ * This page preprocess function will be called after all other preprocessing
+ * has been completed.
+ */
+function fett_preprocess_page_last(&$vars) {
+  $theme = \Drupal::theme()->getActiveTheme()->getName();
+  $config = \Drupal::config($theme . '.settings')->get('settings');
+
+  // Offcanvas ops
+  fett_offcanvas_preprocess_page($vars, $config);
+}
+
+/**
+ * Implements hook_preprocess_eck_entity().
+ */
+function fett_preprocess_eck_entity(&$vars) {
+  $content = $vars['entity'];
+  if (isset($content['#' . $content['#entity_type']])) {
+    // We add these classes here because ECK eck_entity.html.twig is jacked.
+    $entity = $content['#' . $content['#entity_type']];
+    $vars['attributes']['class'][] = Html::getClass($entity->getEntityTypeId());
+    $vars['attributes']['class'][] = Html::getClass($entity->bundle());
+  }
+}
+
+/**
+ * Implements theme_menu_local_tasks().
+ */
+function fett_menu_local_tasks(&$vars) {
+  $output = '';
+
+  if (!empty($vars['primary'])) {
+    $vars['primary']['#prefix'] = '<h2 class="visually-hidden">' . t('Primary tabs') . '</h2>';
+    $vars['primary']['#prefix'] .= '<div class="tasks tasks-primary button-group">';
+    $vars['primary']['#suffix'] = '</div>';
+    $output .= drupal_render($vars['primary']);
+  }
+  if (!empty($vars['secondary'])) {
+    $vars['secondary']['#prefix'] = '<h2 class="visually-hidden">' . t('Secondary tabs') . '</h2>';
+    $vars['secondary']['#prefix'] .= '<div class="tasks tasks-secondary button-group">';
+    $vars['secondary']['#suffix'] = '</div>';
+    $output .= drupal_render($vars['secondary']);
+  }
+
+  return $output;
+}
+
+/**
+ * Implements theme_menu_local_task().
+ */
+function fett_menu_local_task(&$vars) {
+  $theme = \Drupal::theme()->getActiveTheme()->getName();
+  $config = \Drupal::config($theme . '.settings')->get('settings');
+
+  $link = $vars['element']['#link'];
+  $link_text = array(
+    '#markup' => $link['title'],
+  );
+
+  if (!empty($vars['element']['#active'])) {
+    // Add text to indicate active tab for non-visual users.
+    $link_text['#suffix'] = '<span class="visually-hidden">' . t('(active tab)') . '</span>';
+  }
+
+  $state = !empty($vars['element']['#active']) ? 'active' : 'secondary';
+  $link['url']->setOption('attributes', array('class' => array('button', 'admin', $state)));
+
+  // Iconify integration
+  if (isset($config['enable_extensions']) && $config['enable_extensions'] === 1) {
+    if (isset($config['enable_iconify']) && $config['enable_iconify'] === 1 && !empty($config['iconify_tasks'])) {
+      if (\Drupal::moduleHandler()->moduleExists('iconify')) {
+        $link_text['#markup'] = iconify($link_text['#markup']);
+        if (!empty($config['iconify_tasks_icon_only'])) {
+          $link_text['#markup']->setIconOnly();
+        }
+      }
+    }
+  }
+
+  $a_tag = \Drupal::l($link_text, $link['url']);
+
+  return $a_tag;
+}

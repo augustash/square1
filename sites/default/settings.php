@@ -23,3 +23,21 @@ $local_settings = __DIR__ . "/settings.local.php";
 if (file_exists($local_settings)) {
   include $local_settings;
 }
+$settings['install_profile'] = 'square1';
+
+/**
+ * Execute for all Pantheon environments
+ */
+if (defined('PANTHEON_ENVIRONMENT')) {
+  // Eliminate the Trusted Host warning
+  if (in_array($_ENV['PANTHEON_ENVIRONMENT'], array('dev', 'test', 'live'))) {
+    $settings['trusted_host_patterns'][] = "{$_ENV['PANTHEON_ENVIRONMENT']}-{$_ENV['PANTHEON_SITE_NAME']}.getpantheon.io";
+    $settings['trusted_host_patterns'][] = "{$_ENV['PANTHEON_ENVIRONMENT']}-{$_ENV['PANTHEON_SITE_NAME']}.pantheon.io";
+    $settings['trusted_host_patterns'][] = "{$_ENV['PANTHEON_ENVIRONMENT']}-{$_ENV['PANTHEON_SITE_NAME']}.pantheonsite.io";
+    $settings['trusted_host_patterns'][] = "{$_ENV['PANTHEON_ENVIRONMENT']}-{$_ENV['PANTHEON_SITE_NAME']}.panth.io";
+
+    # Value with custom domain(s) added in the site Dashboard
+    // $settings['trusted_host_patterns'][] = '^.+\.augustash\.com$';
+    // $settings['trusted_host_patterns'][] = '^augustash\.com$';
+  }
+}
