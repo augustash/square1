@@ -1,0 +1,17 @@
+---
+api_version: 1
+
+# PHP Version:
+# https://pantheon.io/docs/pantheon-yml#php-version
+php_version: 7.0
+
+# Protected Web Paths
+# https://pantheon.io/docs/pantheon-yml#protected-web-paths
+protected_web_paths:
+   - /README.md
+   - /README.txt
+   - /LICENSE.txt
+   - /web.config
+   - /example.gitignore
+   - /composer.json
+   - /composer.lock
