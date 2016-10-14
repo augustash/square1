@@ -34,3 +34,40 @@ git push origin master
 ```
 
 5) Put the Pantheon site into SFTP during installation, and visit the install page, `/core/install.php`, to complete the process.
+
+## Merge Upstream Changes
+
+This repository is a fork of [Pantheon's Drops-8 repository](https://github.com/pantheon-systems/drops-8). As they update their codebase, the changes should be merged into Square1. Follow this process to merge upstream changes:
+
+1) Clone the Square1 repository:
+
+```
+git clone git@github.com:augustash/square1.git square1
+cd square1/
+```
+
+2) Add Pantheon's repository as an upstream Git remote:
+
+```
+git add remote upstream git@github.com:pantheon-systems/drops-8.git
+```
+
+3) Fetch any branches and their commits from the upstream repository:
+
+```
+git fetch upstream
+```
+
+4) Check out the Square1 `master` branch:
+
+```
+git checkout master
+```
+
+5) Merge commits from `upstream/master` to Square1's `master` branch:
+
+```
+git merge upstream/master
+```
+
+**Note:** You may run into merge conflicts with `composer.lock` and the `vendor` directory in particular. The easiest solution is to remove `composer.lock` and the full `vendor` directory, then run `composer install`. You can then safely add the new/changed items and complete the merge commit. More specific help can be found in [Github's Upstream Article](https://help.github.com/articles/syncing-a-fork/).
