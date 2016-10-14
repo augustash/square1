@@ -361,6 +361,13 @@ class ComposerStaticInitDrupal8
                 0 => __DIR__ . '/..' . '/doctrine/common/lib',
             ),
         ),
+        'A' => 
+        array (
+            'Asm89\\Stack' => 
+            array (
+                0 => __DIR__ . '/..' . '/asm89/stack-cors/src',
+            ),
+        ),
     );
 
     public static $classMap = array (

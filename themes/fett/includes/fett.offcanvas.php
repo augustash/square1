@@ -3,6 +3,9 @@
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Template\Attribute;
 
+/**
+ * Implements hook_theme().
+ */
 function fett_offcanvas_theme($module_path) {
   return [
     // Offcanvas
@@ -97,7 +100,7 @@ function fett_preprocess_fett_offcanvas_link(&$vars) {
   $vars['attributes']['class'][] = 'offcanvas-link-' . $item['id'];
   $vars['attributes']['class'][] = 'js-hide';
   $vars['attributes']['data-id'] = $item['id'];
-  $vars['text'] = $item['options']['link_text'];
+  $vars['text']['#markup'] = $item['options']['link_text'];
 }
 
 /**

@@ -15,7 +15,6 @@ var fs = require('fs');
 var config = {
   compileScss: true,
   compileJs: true,
-  compressImages: true,
   purgeRenderCache: false,
   browserSync: {
     enable: false,
@@ -94,7 +93,6 @@ gulp.task('sass', function (){
     .pipe(prefix(
       "last 2 versions", "> 1%", "ie 8", "ie 7"
       ))
-    .pipe(gulp.dest('./css'))
     .pipe(clean())
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('./css'))
@@ -152,6 +150,10 @@ gulp.task('imgmin', function () {
     .pipe(gulp.dest('./images'));
 });
 
+gulp.task('img', function(){
+  gulp.start(['svgmin','imgmin']);
+});
+
 ////////////////////////////////////////////////////////////////////////////////
 // Browser Sync
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +162,8 @@ gulp.task('browser-sync', function() {
   browserSync.init({
     port: config.browserSync.port,
     proxy: config.browserSync.hostname,
-    open: config.browserSync.openAutomatically
+    open: config.browserSync.openAutomatically,
+    notify: false
   });
 });
 
@@ -228,10 +231,6 @@ gulp.task('default', function(){
 
     if (config.compileJs) {
       gulp.watch(['./dev/js/*.js', './dev/js/**/*.js'], ['jsLint', 'js']);
-    }
-
-    if (config.compressImages) {
-      gulp.watch(['./dev/img/*', './dev/img/**/*'], ['svgmin','imgmin']);
     }
 
     if (config.purgeRenderCache) {

@@ -6,6 +6,7 @@
  */
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Template\Attribute;
 
 include_once('includes/fett.offcanvas.php');
 include_once('includes/fett.mobile_menu.php');
@@ -16,7 +17,9 @@ include_once('includes/fett.mobile_menu.php');
 function fett_theme() {
   $module_path = drupal_get_path('theme', 'fett');
   return [
-  ] + fett_offcanvas_theme($module_path);
+  ]
+  + fett_offcanvas_theme($module_path)
+  + fett_mobile_menu_theme($module_path);
 }
 
 /**
@@ -158,6 +161,14 @@ function fett_preprocess_node(&$vars) {
 }
 
 /**
+ * Implements template_preprocess_node.
+ */
+function fett_preprocess_field(&$vars) {
+  $vars['element'] = 'div';
+  $vars['content_element'] = '';
+}
+
+/**
  * This page preprocess function will be called after all other preprocessing
  * has been completed.
  */
@@ -180,6 +191,79 @@ function fett_preprocess_eck_entity(&$vars) {
     $vars['attributes']['class'][] = Html::getClass($entity->getEntityTypeId());
     $vars['attributes']['class'][] = Html::getClass($entity->bundle());
   }
+}
+
+/**
+ * Implements hook_preprocess_block().
+ */
+function fett_preprocess_block(&$vars) {
+  $theme = \Drupal::theme()->getActiveTheme()->getName();
+  $config = \Drupal::config($theme . '.settings')->get('settings');
+  fett_mobile_menu_preprocess_block($vars, $config);
+
+  // Remove classes for blocks we don't need wrapper. block.html.twig will
+  // not wrap if attributes are empty.
+  switch ($vars['plugin_id']) {
+    case 'system_main_block':
+      $vars['attributes'] = [];
+      break;
+  }
+}
+
+/**
+ * Implments template_preprocess_views_view().
+ */
+function fett_preprocess_views_view(&$vars){
+  $view = $vars['view'];
+
+  if($view->ajaxEnabled() == FALSE) {
+    // empty the dom_id if ajax is disabled
+    $vars['dom_id'] = '';
+  } else {
+    // add an ajax class as well as the dom_id
+    $vars['attributes']['class'][] = 'ajax';
+  }
+}
+
+/**
+ * Implments template_preprocess_views_view().
+ */
+function fett_preprocess_container(&$vars){
+  $element = $vars['element'];
+  // Remove classes for containers we don't need wrapper. container.html.twig
+  // will not wrap if attributes are empty.
+  switch ($element['#type']) {
+    case 'view':
+      $vars['attributes'] = [];
+      break;
+  }
+}
+
+/**
+ * Implements hook_preprocess_menu().
+ */
+function fett_preprocess_menu(&$vars) {
+  // Ignore admin menus
+  if ($vars['menu_name'] == 'admin') {
+    return;
+  }
+  _fett_preprocess_menu_alter_items($vars['items']);
+}
+
+/**
+ * Helper function to recursively alter menu items.
+ */
+function _fett_preprocess_menu_alter_items(&$items) {
+  foreach ($items as &$item) {
+    $options = $item['url']->getOptions();
+    $options['attributes']['class'][] = 'menu-item';
+    $item['url']->setOptions($options);
+    $item['link_attributes'] = new Attribute($options['attributes']);
+    if (!empty($item['below'])) {
+      $item['below'] = _fett_preprocess_menu_alter_items($item['below']);
+    }
+  }
+  return $items;
 }
 
 /**
@@ -222,19 +306,22 @@ function fett_menu_local_task(&$vars) {
   }
 
   $state = !empty($vars['element']['#active']) ? 'active' : 'secondary';
-  $link['url']->setOption('attributes', array('class' => array('button', 'admin', $state)));
+  $link_attributes = ['class' => ['button', 'admin', $state]];
 
   // Iconify integration
   if (isset($config['enable_extensions']) && $config['enable_extensions'] === 1) {
     if (isset($config['enable_iconify']) && $config['enable_iconify'] === 1 && !empty($config['iconify_tasks'])) {
       if (\Drupal::moduleHandler()->moduleExists('iconify')) {
-        $link_text['#markup'] = iconify($link_text['#markup']);
+        $title = $link_text['#markup'];
+        $link_text['#markup'] = iconify($title);
         if (!empty($config['iconify_tasks_icon_only'])) {
           $link_text['#markup']->setIconOnly();
+          $link_attributes['title'] = $title;
         }
       }
     }
   }
+  $link['url']->setOption('attributes', $link_attributes);
 
   $a_tag = \Drupal::l($link_text, $link['url']);
 
